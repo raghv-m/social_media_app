@@ -47,7 +47,6 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
-
 		<!-- Permissions -->
 		<key>NSCameraUsageDescription</key>
 		<string>We need access to your camera to take photos and videos.</string>
