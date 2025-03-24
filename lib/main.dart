@@ -65,24 +65,69 @@ class MyApp extends StatelessWidget {
           final themeProvider = context.watch<ThemeProvider>();
           return MaterialApp(
             title: 'Chattr',
+            debugShowCheckedModeBanner: false,
             theme: AppTheme.darkTheme.copyWith(
               colorScheme: ColorScheme.dark(
                 primary: themeProvider.currentColor.color,
                 background: Colors.black,
               ),
-            ),
-            initialRoute: '/',
-            routes: {
-              '/': (context) => const AuthWrapper(),
-              '/login': (context) => const LoginSignupScreen(),
-              '/home': (context) => const MainScreen(),
-              '/create_post': (context) => const CreatePostScreen(),
-              '/chat': (context) => const ChatScreen(
-                receiverId: '',
-                receiverName: '',
-                receiverProfilePic: '',
+              pageTransitionsTheme: const PageTransitionsTheme(
+                builders: {
+                  TargetPlatform.android: ZoomPageTransitionsBuilder(),
+                  TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+                },
               ),
-              '/settings': (context) => const SettingsScreen(),
+            ),
+            onGenerateRoute: (settings) {
+              switch (settings.name) {
+                case '/':
+                  return MaterialPageRoute(
+                    builder: (_) => const AuthWrapper(),
+                  );
+                case '/login':
+                  return MaterialPageRoute(
+                    builder: (_) => const LoginSignupScreen(),
+                  );
+                case '/home':
+                  return MaterialPageRoute(
+                    builder: (_) => const MainScreen(),
+                  );
+                case '/create_post':
+                  return PageRouteBuilder(
+                    pageBuilder: (context, animation, secondaryAnimation) => 
+                      const CreatePostScreen(),
+                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                      const begin = Offset(0.0, 1.0);
+                      const end = Offset.zero;
+                      const curve = Curves.easeInOutCubic;
+                      var tween = Tween(begin: begin, end: end).chain(
+                        CurveTween(curve: curve),
+                      );
+                      var offsetAnimation = animation.drive(tween);
+                      return SlideTransition(
+                        position: offsetAnimation,
+                        child: child,
+                      );
+                    },
+                  );
+                case '/chat':
+                  final args = settings.arguments as Map<String, String>;
+                  return MaterialPageRoute(
+                    builder: (_) => ChatScreen(
+                      receiverId: args['receiverId'] ?? '',
+                      receiverName: args['receiverName'] ?? '',
+                      receiverProfilePic: args['receiverProfilePic'] ?? '',
+                    ),
+                  );
+                case '/settings':
+                  return MaterialPageRoute(
+                    builder: (_) => const SettingsScreen(),
+                  );
+                default:
+                  return MaterialPageRoute(
+                    builder: (_) => const AuthWrapper(),
+                  );
+              }
             },
           );
         },
@@ -120,8 +165,9 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
+  late AnimationController _controller;
   
   final List<Widget> _screens = [
     const HomeScreen(),
@@ -131,15 +177,42 @@ class _MainScreenState extends State<MainScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final themeColor = context.watch<ThemeProvider>().currentColor.color;
     
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+        child: _screens[_selectedIndex],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
+        onTap: (index) {
+          setState(() => _selectedIndex = index);
+          _controller.forward(from: 0);
+        },
         selectedItemColor: themeColor,
         unselectedItemColor: Colors.grey,
         items: const [
@@ -161,10 +234,19 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.pushNamed(context, '/create_post'),
-        backgroundColor: themeColor,
-        child: const Icon(Icons.add),
+      floatingActionButton: ScaleTransition(
+        scale: Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).animate(CurvedAnimation(
+          parent: _controller,
+          curve: Curves.elasticOut,
+        )),
+        child: FloatingActionButton(
+          onPressed: () => Navigator.pushNamed(context, '/create_post'),
+          backgroundColor: themeColor,
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
