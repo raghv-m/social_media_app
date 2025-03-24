@@ -16,9 +16,9 @@
 <div align="center">
   <h3>Raghav Mahajan</h3>
   
-  [![GitHub](https://img.shields.io/badge/GitHub-s_raghv--m-black?style=flat&logo=github)](https://github.com/raghv-m)
+  [![GitHub](https://img.shields.io/badge/GitHub-raghv-m-black?style=flat&logo=github)](https://github.com/raghv-m)
   [![LinkedIn](https://img.shields.io/badge/LinkedIn-Raghav_Mahajan-blue?style=flat&logo=linkedin)](https://www.linkedin.com/in/raghav-mahajan-17611b24b)
-  [![Instagram](https://img.shields.io/badge/Instagram-raghv.m__-pink?style=flat&logo=instagram)](https://instagram.com/ragh.v_)
+  [![Instagram](https://img.shields.io/badge/Instagram-ragh.v_-pink?style=flat&logo=instagram)](https://instagram.com/ragh.v_)
   [![Snapchat](https://img.shields.io/badge/Snapchat-rxaghav-yellow?style=flat&logo=snapchat)](https://snapchat.com/add/rxaghav)
 </div>
 
