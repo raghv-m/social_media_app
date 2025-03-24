@@ -159,10 +159,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-For support, email support@chattr.app or join our Discord server.
+For support, email devrvm@gmail.com or join our social handles.
 
 ---
 
 <div align="center">
-  Made with ❤️ by the Chattr Team
+  Made with ❤️ by Raghav
 </div>
