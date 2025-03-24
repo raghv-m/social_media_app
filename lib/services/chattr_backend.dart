@@ -72,7 +72,7 @@ class ChattrBackend {
     return _firestore
         .collection('users')
         .where('username', isGreaterThanOrEqualTo: query)
-        .where('username', isLessThanOrEqualTo: query + '\uf8ff')
+        .where('username', isLessThanOrEqualTo: '$query\uf8ff')
         .get();
   }
 
@@ -169,5 +169,120 @@ class ChattrBackend {
     final image = decodeImage(await file.readAsBytes());
     final compressedImage = encodeJpg(image!, quality: 70);
     await file.writeAsBytes(compressedImage);
+  }
+
+  /// ✅ 12. Change Password
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No user logged in');
+
+    // Reauthenticate user
+    final credential = EmailAuthProvider.credential(
+      email: user.email!,
+      password: currentPassword,
+    );
+    await user.reauthenticateWithCredential(credential);
+
+    // Change password
+    await user.updatePassword(newPassword);
+  }
+
+  /// ✅ 13. Update User Profile
+  Future<void> updateProfile({
+    String? username,
+    String? name,
+    String? bio,
+    String? profilePic,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No user logged in');
+
+    final updates = <String, dynamic>{};
+    if (username != null) updates['username'] = username;
+    if (name != null) updates['name'] = name;
+    if (bio != null) updates['bio'] = bio;
+    if (profilePic != null) updates['profilePic'] = profilePic;
+
+    await _firestore.collection('users').doc(user.uid).update(updates);
+  }
+
+  /// ✅ 14. Delete Account
+  Future<void> deleteAccount(String password) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No user logged in');
+
+    // Reauthenticate user
+    final credential = EmailAuthProvider.credential(
+      email: user.email!,
+      password: password,
+    );
+    await user.reauthenticateWithCredential(credential);
+
+    // Delete user data from Firestore
+    await _firestore.collection('users').doc(user.uid).delete();
+
+    // Delete user account
+    await user.delete();
+  }
+
+  /// ✅ 15. Report User
+  Future<void> reportUser(String reportedUserId, String reason) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No user logged in');
+
+    await _firestore.collection('reports').add({
+      'reporterId': user.uid,
+      'reportedUserId': reportedUserId,
+      'reason': reason,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+  /// ✅ 16. Block User
+  Future<void> blockUser(String blockedUserId) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No user logged in');
+
+    await _firestore.collection('users').doc(user.uid).update({
+      'blockedUsers': FieldValue.arrayUnion([blockedUserId]),
+    });
+  }
+
+  /// ✅ 17. Unblock User
+  Future<void> unblockUser(String blockedUserId) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No user logged in');
+
+    await _firestore.collection('users').doc(user.uid).update({
+      'blockedUsers': FieldValue.arrayRemove([blockedUserId]),
+    });
+  }
+
+  /// ✅ 18. Get User Settings
+  Future<Map<String, dynamic>> getUserSettings() async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No user logged in');
+
+    final doc = await _firestore.collection('users').doc(user.uid).get();
+    return doc.data() ?? {};
+  }
+
+  /// ✅ 19. Update User Settings
+  Future<void> updateUserSettings(Map<String, dynamic> settings) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('No user logged in');
+
+    await _firestore.collection('users').doc(user.uid).update({
+      'settings': settings,
+    });
+  }
+
+  /// ✅ 20. Get User Activity
+  Stream<QuerySnapshot> getUserActivity(String userId) {
+    return _firestore
+        .collection('activity')
+        .where('userId', isEqualTo: userId)
+        .orderBy('timestamp', descending: true)
+        .snapshots();
   }
 }
