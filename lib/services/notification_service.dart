@@ -4,25 +4,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class NotificationService {
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
   // Initialize notifications
   Future<void> initialize() async {
     try {
-      // Initialize local notifications
-      const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-      const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
-      const InitializationSettings initSettings = InitializationSettings(
-        android: androidSettings,
-        iOS: iosSettings,
-      );
-      await _localNotifications.initialize(initSettings);
-
       // Request permission for notifications
       final NotificationSettings settings = await _messaging.requestPermission(
         alert: true,
@@ -72,9 +61,6 @@ class NotificationService {
   // Handle foreground messages
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     try {
-      // Show local notification
-      await _showLocalNotification(message);
-      
       // Store notification in Firestore
       await _storeNotification(message);
     } catch (e) {
@@ -110,46 +96,6 @@ class NotificationService {
       _navigateToScreen(message.data);
     } catch (e) {
       throw Exception('Failed to handle notification tap: $e');
-    }
-  }
-
-  // Show local notification
-  Future<void> _showLocalNotification(RemoteMessage message) async {
-    try {
-      final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        'chattr_notifications',
-        'Chattr Notifications',
-        channelDescription: 'Notifications for Chattr app',
-        importance: Importance.high,
-        priority: Priority.high,
-        showWhen: true,
-        enableVibration: true,
-        enableLights: true,
-        color: const Color(0xFF2196F3),
-        largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-        styleInformation: const BigTextStyleInformation(''),
-      );
-
-      final DarwinNotificationDetails iosDetails = const DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-
-      final NotificationDetails details = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
-
-      await _localNotifications.show(
-        message.hashCode,
-        message.notification?.title,
-        message.notification?.body,
-        details,
-        payload: message.data.toString(),
-      );
-    } catch (e) {
-      throw Exception('Failed to show local notification: $e');
     }
   }
 
@@ -200,23 +146,29 @@ class NotificationService {
     required String type,
     required String title,
     required String body,
-    Map<String, dynamic>? data,
+    Map<String, dynamic>? additionalData,
   }) async {
     try {
       // Get user's FCM token
       final DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
-      final Map<String, dynamic>? userData = userDoc.data() as Map<String, dynamic>?;
-      final String? fcmToken = userData?['fcmToken'];
+      final String? fcmToken = userDoc.get('fcmToken') as String?;
 
       if (fcmToken != null) {
-        // Send notification using Firebase Cloud Functions
-        await _firestore.collection('notification_requests').add({
+        // Prepare notification data
+        final Map<String, dynamic> data = {
           'userId': userId,
-          'fcmToken': fcmToken,
           'type': type,
-          'title': title,
-          'body': body,
-          'data': data ?? {},
+          ...?additionalData,
+        };
+
+        // Send notification using FCM
+        await _firestore.collection('notifications_queue').add({
+          'token': fcmToken,
+          'notification': {
+            'title': title,
+            'body': body,
+          },
+          'data': data,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }

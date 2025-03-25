@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1092034131124",
+    "project_id": "smapp-a4dc6",
+    "storage_bucket": "smapp-a4dc6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1092034131124:android:3a9d16f41d6abc69bb13e1",
+        "android_client_info": {
+          "package_name": "com.example.social_media_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMt_poaseUUeqf9OvFfHhXW39BEOeUky4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

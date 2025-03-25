@@ -16,12 +16,16 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoading = false;
+  bool _hasMore = true;
+  static const int _pageSize = 10;
+  static const double _scrollThreshold = 200.0;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
     _loadInitialFeed();
+    _loadStories();
   }
 
   @override
@@ -31,15 +35,57 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadInitialFeed() async {
+    if (_isLoading) return;
+    
     setState(() => _isLoading = true);
-    await context.read<FeedProvider>().refreshFeed();
-    setState(() => _isLoading = false);
+    try {
+      await context.read<FeedProvider>().refreshFeed();
+      setState(() => _hasMore = true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading feed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _loadStories() async {
+    try {
+      await context.read<FeedProvider>().loadStories();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading stories: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _onScroll() async {
+    if (_isLoading || !_hasMore) return;
+
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      await context.read<FeedProvider>().loadMorePosts();
+        _scrollController.position.maxScrollExtent - _scrollThreshold) {
+      setState(() => _isLoading = true);
+      try {
+        final hasMore = await context.read<FeedProvider>().loadMorePosts();
+        setState(() => _hasMore = hasMore);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error loading more posts: $e')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 
@@ -80,32 +126,49 @@ class _HomeScreenState extends State<HomeScreen> {
           slivers: [
             // Stories section
             SliverToBoxAdapter(
-              child: Container(
+              child: SizedBox(
                 height: 100,
-                padding: const EdgeInsets.symmetric(vertical: 8),
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  itemCount: 10, // Replace with actual stories count
+                  itemCount: feedProvider.stories.length + 1,
                   itemBuilder: (context, index) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 4),
-                      child: StoryCircle(),
+                    if (index == 0) {
+                      return const StoryCircle(
+                        isAddStory: true,
+                        username: 'Your Story',
+                      );
+                    }
+                    final story = feedProvider.stories[index - 1];
+                    return StoryCircle(
+                      imageUrl: story['imageUrl'],
+                      username: story['username'],
+                      hasUnseenStory: story['hasUnseenStory'] ?? false,
                     );
                   },
                 ),
               ),
             ),
-            // Feed section
-            if (_isLoading)
+            // Feed posts
+            if (feed.isEmpty && !_isLoading)
               const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(
+                  child: Text('No posts yet. Be the first to post!'),
+                ),
               )
             else
               SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     if (index >= feed.length) {
+                      if (!_hasMore) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Text('No more posts'),
+                          ),
+                        );
+                      }
                       return const Center(
                         child: Padding(
                           padding: EdgeInsets.all(16.0),

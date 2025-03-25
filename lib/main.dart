@@ -11,7 +11,7 @@ import 'package:social_media_app/screens/profile_screen.dart';
 import 'package:social_media_app/screens/explore_screen.dart';
 import 'package:social_media_app/screens/settings_screen.dart';
 import 'package:social_media_app/services/chattr_backend.dart';
-import 'package:social_media_app/providers/feed_provider.dart';
+import 'package:social_med ia_app/providers/feed_provider.dart';
 import 'package:social_media_app/providers/theme_provider.dart';
 import 'package:social_media_app/providers/media_provider.dart';
 import 'package:social_media_app/screens/create_post_screen.dart';

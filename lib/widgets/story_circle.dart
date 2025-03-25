@@ -3,55 +3,75 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 class StoryCircle extends StatelessWidget {
   final String? imageUrl;
-  final String? username;
-  final bool isViewed;
-  final VoidCallback? onTap;
+  final String username;
+  final bool isAddStory;
+  final bool hasUnseenStory;
 
   const StoryCircle({
     super.key,
     this.imageUrl,
-    this.username,
-    this.isViewed = false,
-    this.onTap,
+    required this.username,
+    this.isAddStory = false,
+    this.hasUnseenStory = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isViewed ? Colors.grey : Colors.blue,
-                width: 2,
+          Stack(
+            children: [
+              Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: hasUnseenStory
+                      ? const LinearGradient(
+                          colors: [Colors.purple, Colors.orange],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        )
+                      : null,
+                  border: Border.all(
+                    color: hasUnseenStory ? Colors.transparent : Colors.grey[300]!,
+                    width: 2,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(2),
+                  child: CircleAvatar(
+                    backgroundColor: Colors.white,
+                    backgroundImage: isAddStory
+                        ? null
+                        : (imageUrl != null
+                            ? CachedNetworkImageProvider(imageUrl!)
+                            : null),
+                    child: isAddStory
+                        ? const Icon(Icons.add, color: Colors.black)
+                        : null,
+                  ),
+                ),
               ),
-            ),
-            child: ClipOval(
-              child: imageUrl != null
-                  ? CachedNetworkImage(
-                      imageUrl: imageUrl!,
-                      fit: BoxFit.cover,
-                    )
-                  : Container(
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.person),
-                    ),
-            ),
+            ],
           ),
-          if (username != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              username!,
-              style: const TextStyle(fontSize: 12),
+          const SizedBox(height: 4),
+          SizedBox(
+            width: 70,
+            child: Text(
+              username,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-          ],
+          ),
         ],
       ),
     );
